@@ -1,0 +1,52 @@
+
+service: intihuatana
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: sa-east-1
+  environment:
+    REGION: ${self:provider.region}
+
+    COMPLETED_ATTENDANCE_TABLE: CompletedAttendanceTable
+  
+  iamRoleStatements:
+    - Effect:  "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.COMPLETED_ATTENDANCE_TABLE}"
+
+functions:
+  checkIn:
+    handler: check-in.handler
+    events:
+      - http:
+          method: post
+          path:  check-in
+
+resources:
+  Resources:
+    CompletedAttendanceTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: "userId"
+          AttributeType: "S"
+        - AttributeName: "checkInTime"
+          AttributeType: "S"
+        KeySchema:
+        - AttributeName: "userId"
+          KeyType: "HASH"
+        - AttributeName: "checkInTime"
+          KeyType: "RANGE"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: ${self:provider.environment.COMPLETED_ATTENDANCE_TABLE}
+
